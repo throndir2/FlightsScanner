@@ -5,8 +5,6 @@ overwrites the previous price for that pair instead of duplicating rows. See
 ``docs/database-schema.md`` and ``docs/caching-strategy.md``.
 """
 
-from __future__ import annotations
-
 from datetime import date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING

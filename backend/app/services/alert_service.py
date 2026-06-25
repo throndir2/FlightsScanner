@@ -6,7 +6,7 @@ implicitly, whatever the worker has already cached). See ``docs/api-spec.md``.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -108,7 +108,7 @@ async def get_results_for_user(
     for alert in alerts:
         results_stmt = select(FlightResult).where(col(FlightResult.alert_id) == alert.id)
         if not include_stale:
-            cutoff = datetime.now(timezone.utc) - timedelta(seconds=settings.CACHE_TTL_SECONDS)
+            cutoff = datetime.now(UTC) - timedelta(seconds=settings.CACHE_TTL_SECONDS)
             results_stmt = results_stmt.where(col(FlightResult.fetched_at) >= cutoff)
         results_stmt = results_stmt.order_by(col(FlightResult.price).asc()).limit(top_n)
 

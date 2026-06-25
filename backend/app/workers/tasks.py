@@ -12,7 +12,7 @@ are synchronous.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import select
@@ -157,7 +157,7 @@ def _upsert_result(db, alert_id: UUID, provider_name: str, offer) -> None:
     instead of inserting a duplicate. ``id`` is supplied explicitly because the core insert
     bypasses SQLModel's Python-side default.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     stmt = pg_insert(FlightResult).values(
         id=uuid4(),
         alert_id=alert_id,

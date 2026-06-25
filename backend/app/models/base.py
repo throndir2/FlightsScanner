@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
 from sqlalchemy import DateTime, func
@@ -20,7 +20,7 @@ class CabinClass(str, Enum):
 
 def utcnow() -> datetime:
     """Timezone-aware current UTC timestamp (used as a Python-side default)."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class TimestampMixin(SQLModel):

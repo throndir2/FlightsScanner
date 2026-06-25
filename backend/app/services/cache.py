@@ -9,7 +9,7 @@ async client getter is provided for the API's health check. See
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import redis
@@ -73,14 +73,14 @@ def cache_price(key: str, offer: FlightOffer, *, ttl: int | None = None) -> None
         "stops": offer.stops,
         "is_nonstop": offer.is_nonstop,
         "deep_link": offer.deep_link,
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "fetched_at": datetime.now(UTC).isoformat(),
     }
     get_sync_redis().setex(key, ttl or settings.CACHE_TTL_SECONDS, json.dumps(payload))
 
 
 # ── Daily provider quota guard ───────────────────────────────────────────────
 def _quota_key(provider: str) -> str:
-    day = datetime.now(timezone.utc).strftime("%Y%m%d")
+    day = datetime.now(UTC).strftime("%Y%m%d")
     return f"quota:{provider}:{day}"
 
 

@@ -13,7 +13,7 @@ cache-first worker (see ``docs/caching-strategy.md``). Provider responses are tr
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -81,7 +81,7 @@ class AmadeusFlightProvider:
     def _access_token(self) -> str:
         client_id = self.client_id or ""
         cached = _TOKEN_CACHE.get(client_id)
-        if cached is not None and cached[1] > datetime.now(timezone.utc):
+        if cached is not None and cached[1] > datetime.now(UTC):
             return cached[0]
 
         try:
@@ -104,7 +104,7 @@ class AmadeusFlightProvider:
         if not token:
             raise ProviderError("Amadeus auth response did not include an access_token")
         expires_in = int(payload.get("expires_in", 1799))
-        expires_at = datetime.now(timezone.utc) + timedelta(seconds=max(60, expires_in - 60))
+        expires_at = datetime.now(UTC) + timedelta(seconds=max(60, expires_in - 60))
         _TOKEN_CACHE[client_id] = (token, expires_at)
         return token
 

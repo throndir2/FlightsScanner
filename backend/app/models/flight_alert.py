@@ -5,8 +5,6 @@ Splits **strict** constraints (origin, destination, non-stop) from **fuzzy** con
 ``docs/fuzzy-dates.md``.
 """
 
-from __future__ import annotations
-
 from datetime import date
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4

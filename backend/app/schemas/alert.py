@@ -83,7 +83,7 @@ class FlightAlertBase(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def _validate_constraints(self) -> "FlightAlertBase":
+    def _validate_constraints(self) -> FlightAlertBase:
         validate_alert_constraints(
             origin=self.origin,
             destination=self.destination,

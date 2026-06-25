@@ -3,8 +3,6 @@
 Reconciled with the NextAuth session by email; see ``docs/auth-and-security.md``.
 """
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
