@@ -1,0 +1,2 @@
+# Keeps the Next.js public/ directory present for the Docker build.
+# Add static assets (favicon, images) here.

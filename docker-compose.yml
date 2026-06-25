@@ -1,0 +1,165 @@
+# FlightsScanner — local development stack
+#
+# Brings up the entire system with one command:
+#   docker compose up --build
+#
+# Services:
+#   - postgres     durable relational store
+#   - redis        Celery broker + result backend AND the price/dedupe cache
+#   - backend-api  FastAPI (async) REST API
+#   - worker       Celery worker (sync) — the only process that calls providers
+#   - beat         Celery beat scheduler (singleton) — enqueues periodic refreshes
+#   - frontend     Next.js (TypeScript) UI
+#
+# See docs/architecture.md for the topology and docs/development.md for usage.
+
+name: flightsscanner
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: flights-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-flights}
+      POSTGRES_USER: ${POSTGRES_USER:-flights}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flights}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-flights} -d ${POSTGRES_DB:-flights}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - flights-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: flights-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - flights-net
+
+  backend-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: flights-backend-api
+    restart: unless-stopped
+    # Wait for Postgres + ensure schema (create_all bootstrap), then start the API.
+    command: >
+      sh -c "python -m app.prestart &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://flights:flights@postgres:5432/flights}
+      DATABASE_URL_SYNC: ${DATABASE_URL_SYNC:-postgresql+psycopg2://flights:flights@postgres:5432/flights}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-prod}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-14400}
+      PROVIDER_DAILY_QUOTA: ${PROVIDER_DAILY_QUOTA:-1000}
+      FLIGHT_PROVIDER: ${FLIGHT_PROVIDER:-mock}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    networks:
+      - flights-net
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: flights-worker
+    restart: unless-stopped
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "--loglevel=info", "--concurrency=4"]
+    environment:
+      DATABASE_URL_SYNC: ${DATABASE_URL_SYNC:-postgresql+psycopg2://flights:flights@postgres:5432/flights}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://flights:flights@postgres:5432/flights}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-14400}
+      PROVIDER_DAILY_QUOTA: ${PROVIDER_DAILY_QUOTA:-1000}
+      FLIGHT_PROVIDER: ${FLIGHT_PROVIDER:-mock}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend-api:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+    networks:
+      - flights-net
+
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: flights-beat
+    restart: unless-stopped
+    # Beat MUST be a singleton — do not scale this service.
+    command: ["celery", "-A", "app.workers.celery_app", "beat", "--loglevel=info"]
+    environment:
+      DATABASE_URL_SYNC: ${DATABASE_URL_SYNC:-postgresql+psycopg2://flights:flights@postgres:5432/flights}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      FLIGHT_PROVIDER: ${FLIGHT_PROVIDER:-mock}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    depends_on:
+      redis:
+        condition: service_healthy
+      backend-api:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+    networks:
+      - flights-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: flights-frontend
+    restart: unless-stopped
+    environment:
+      # Server-side calls to the backend use the Compose service DNS name.
+      API_BASE_URL: ${API_BASE_URL:-http://backend-api:8000}
+      # Browser-side calls use the published host port.
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me-in-prod}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      backend-api:
+        condition: service_started
+    networks:
+      - flights-net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  flights-net:
+    driver: bridge

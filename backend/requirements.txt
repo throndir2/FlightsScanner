@@ -1,0 +1,29 @@
+# ── Backend runtime dependencies (pinned for reproducibility) ──────────────────
+# Web framework + ASGI server
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+
+# ORM / models (SQLModel = SQLAlchemy 2.0 core + Pydantic v2)
+sqlmodel==0.0.22
+SQLAlchemy==2.0.36
+alembic==1.14.0
+
+# Database drivers: async (API) + sync (Celery / Alembic)
+asyncpg==0.30.0
+psycopg2-binary==2.9.10
+
+# Background jobs + broker/cache client
+celery[redis]==5.4.0
+redis==5.2.0
+
+# HTTP client (Amadeus adapter; also used by tests)
+httpx==0.28.0
+
+# Validation / settings
+pydantic==2.10.2
+pydantic-settings==2.6.1
+
+# Security (JWT + password hashing)
+PyJWT==2.10.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1

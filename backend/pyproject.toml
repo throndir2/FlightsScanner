@@ -1,0 +1,36 @@
+[project]
+name = "flightsscanner-backend"
+version = "0.1.0"
+description = "FlightsScanner backend: FastAPI API + Celery workers for flexible flight-price tracking."
+requires-python = ">=3.12"
+license = { text = "GPL-2.0-only" }
+
+# Runtime/dev dependencies are pinned in requirements.txt / requirements-dev.txt.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "W"]
+# B008: FastAPI intentionally uses function calls (Depends/Query/Header) in argument
+# defaults — that's the framework idiom, not a bug.
+ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "tests"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
+asyncio_mode = "auto"
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+# SQLModel's dynamic attributes are hard to fully type; keep mypy practical here.
+check_untyped_defs = true
+warn_unused_ignores = false

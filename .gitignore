@@ -1,0 +1,50 @@
+# ── Environment / secrets ─────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.local
+
+# ── Python (backend) ──────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+.python-version
+
+# Alembic local artifacts (keep versions/ and env.py, ignore nothing by default)
+
+# ── Node / Next.js (frontend) ─────────────────────────────────────────
+node_modules/
+.next/
+out/
+build/
+.npm/
+.eslintcache
+*.tsbuildinfo
+
+# ── Docker ────────────────────────────────────────────────────────────
+# (compose volumes are named; nothing to ignore here, but local overrides:)
+docker-compose.override.yml
+
+# ── Editors / OS ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────────────────
+*.log
+logs/

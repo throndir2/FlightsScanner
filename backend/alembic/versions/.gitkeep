@@ -1,0 +1,4 @@
+# Alembic migration scripts live here.
+# v1 bootstraps the schema with SQLModel.metadata.create_all (see app/prestart.py).
+# Generate the first real migration with:
+#   alembic revision --autogenerate -m "initial schema"
