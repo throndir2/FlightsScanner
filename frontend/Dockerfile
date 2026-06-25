@@ -1,10 +1,9 @@
 # FlightsScanner frontend image — multi-stage Next.js standalone build.
 FROM node:20-alpine AS deps
 WORKDIR /app
-COPY package.json ./
-# No lockfile is committed in the scaffold; `npm install` resolves deps.
-# (Commit a package-lock.json and switch to `npm ci` for reproducible builds.)
-RUN npm install
+# Install exact, reproducible dependencies from the committed lockfile.
+COPY package.json package-lock.json ./
+RUN npm ci
 
 FROM node:20-alpine AS builder
 WORKDIR /app
